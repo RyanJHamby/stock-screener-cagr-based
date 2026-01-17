@@ -270,21 +270,37 @@ class StockScorer:
         filtered = []
 
         for stock in scored_stocks:
-            # Must have hyperperformance score
-            if stock.get('hyperperformance_score', 0) == 0:
+            symbol = stock.get('symbol', 'UNKNOWN')
+            score = stock.get('hyperperformance_score', 0)
+
+            # Must have hyperperformance score > 0
+            if score == 0:
+                logger.debug(f"{symbol}: Filtered out - zero score")
                 continue
 
-            # Must have at least one of revenue or EPS CAGR
-            if not stock.get('revenue_cagr_3yr') and not stock.get('revenue_cagr_5yr'):
-                if not stock.get('eps_cagr_3yr') and not stock.get('eps_cagr_5yr'):
+            # Check for minimum data requirements (only if strict filtering)
+            if config.STRICT_FILTERING:
+                # Must have at least one of revenue or EPS CAGR
+                has_revenue_cagr = stock.get('revenue_cagr_3yr') or stock.get('revenue_cagr_5yr')
+                has_eps_cagr = stock.get('eps_cagr_3yr') or stock.get('eps_cagr_5yr')
+
+                if not has_revenue_cagr and not has_eps_cagr:
+                    logger.debug(f"{symbol}: Filtered out - no CAGR data")
                     continue
 
-            # Must meet minimum market cap if available
-            market_cap = stock.get('market_cap')
-            if market_cap and market_cap < config.MIN_MARKET_CAP:
-                continue
+            # Optional: Check minimum market cap (only if strict filtering is enabled)
+            # Note: Finnhub returns market cap in millions of USD
+            if config.STRICT_FILTERING and config.MIN_MARKET_CAP > 0:
+                market_cap = stock.get('market_cap')
+                if market_cap is not None and market_cap > 0:
+                    # Convert to actual value (Finnhub gives it in millions)
+                    market_cap_actual = market_cap * 1_000_000
+                    if market_cap_actual < config.MIN_MARKET_CAP:
+                        logger.debug(f"{symbol}: Filtered out - market cap ${market_cap_actual:,.0f} < ${config.MIN_MARKET_CAP:,.0f}")
+                        continue
 
             filtered.append(stock)
+            logger.debug(f"{symbol}: Included - score {score:.2f}")
 
         # Sort by hyperperformance score (descending)
         ranked = sorted(filtered, key=lambda x: x.get('hyperperformance_score', 0), reverse=True)

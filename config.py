@@ -55,8 +55,13 @@ MOAT_THRESHOLDS = {
 }
 
 # Stock universe filters
-MIN_MARKET_CAP = 100_000_000  # $100M minimum
+MIN_MARKET_CAP = 100_000_000  # $100M minimum (set to 0 to disable)
 MIN_TRADING_VOLUME = 50000    # 50k shares daily average
+
+# Enable strict filtering
+# Set to False to include all stocks with any score > 0 (useful for testing)
+# Set to True to filter out stocks without CAGR data or below minimum market cap
+STRICT_FILTERING = False  # Default: False for more lenient testing
 
 # Historical data periods
 HISTORICAL_YEARS = 5

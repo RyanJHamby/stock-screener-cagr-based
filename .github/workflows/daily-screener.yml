@@ -1,0 +1,117 @@
+name: Daily Stock Screener
+
+on:
+  # Run daily at 6 PM EST (23:00 UTC)
+  schedule:
+    - cron: '0 23 * * *'
+
+  # Allow manual trigger
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: 'Limit number of stocks (for testing)'
+        required: false
+        default: ''
+      top:
+        description: 'Number of top performers to show'
+        required: false
+        default: '10'
+
+jobs:
+  screen-stocks:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Cache pip dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
+    - name: Cache API responses
+      uses: actions/cache@v3
+      with:
+        path: cache/
+        key: ${{ runner.os }}-api-cache-${{ github.run_id }}
+        restore-keys: |
+          ${{ runner.os }}-api-cache-
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Run stock screener
+      env:
+        FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+      run: |
+        if [ -n "${{ github.event.inputs.limit }}" ]; then
+          python main.py --limit ${{ github.event.inputs.limit }} --top ${{ github.event.inputs.top }}
+        else
+          python main.py --top ${{ github.event.inputs.top || '10' }}
+        fi
+
+    - name: Upload results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: screener-results-${{ github.run_id }}
+        path: |
+          output/*.json
+          output/*.csv
+          output/*.log
+        retention-days: 30
+
+    - name: Create summary
+      if: success()
+      run: |
+        echo "## Stock Screening Complete! :chart_with_upwards_trend:" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Run Date:** $(date)" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+
+        # Find the most recent CSV file
+        LATEST_CSV=$(ls -t output/*.csv | head -1)
+
+        if [ -f "$LATEST_CSV" ]; then
+          echo "### Top 10 Hyperperformance Stocks" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          head -11 "$LATEST_CSV" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+        fi
+
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "Full results available in the artifacts." >> $GITHUB_STEP_SUMMARY
+
+    - name: Commit results (optional)
+      if: github.event_name == 'schedule'
+      run: |
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+
+        # Create results branch if it doesn't exist
+        git checkout -B results || git checkout results
+
+        # Copy latest results to a persistent location
+        mkdir -p historical_results
+        LATEST_JSON=$(ls -t output/*.json | head -1)
+        LATEST_CSV=$(ls -t output/*.csv | head -1)
+        DATE=$(date +%Y%m%d)
+
+        cp "$LATEST_JSON" "historical_results/results_${DATE}.json"
+        cp "$LATEST_CSV" "historical_results/results_${DATE}.csv"
+
+        git add historical_results/
+        git commit -m "Daily screener results: ${DATE}" || echo "No changes to commit"
+        git push origin results || echo "Push failed, continuing..."

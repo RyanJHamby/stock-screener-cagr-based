@@ -1,0 +1,28 @@
+# Top 100 Growth Stock Candidates for Hyperperformance Screener
+# Categories: AI/Cloud, Semiconductors, Software, Fintech, Cyber, E-commerce, Biotech, Energy
+
+## AI & Cloud Infrastructure (20)
+NVDA GOOGL MSFT META AMZN ORCL CRM NOW SNOW PLTR AI C3AI PATH BILL ESTC MDB ZS DDOG NET CRWD PANW
+
+## Semiconductors & Hardware (15)
+AMD AVGO TSM QCOM AMAT LRCX KLAC ASML MRVL ON TXN ADI NXPI MU INTC
+
+## Software & SaaS (20)
+ADBE INTU WDAY TEAM HUBS OKTA VEEV ZM DOCU SHOP RNG FROG IOT APP S U SMAR ZI PD TTD
+
+## Fintech & Payments (10)
+SQ COIN PYPL V MA AFRM SOFI NU HOOD UPST
+
+## Healthcare & Biotech (15)
+DXCM ISRG VRTX REGN ILMN GILD MRNA ARGX CRSP EDIT NTLA BEAM FATE NVTA TDOC
+
+## E-commerce & Consumer Tech (10)
+SHOP MELI ETSY CHWY W DASH ABNB UBER LYFT RBLX
+
+## Clean Energy & EV (5)
+TSLA ENPH SEDG RIVN LCID
+
+## Data & Analytics (5)
+PLTR SPLK DDOG ESTC MDB
+
+## Total: 100 stocks
